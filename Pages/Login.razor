@@ -1,0 +1,48 @@
+@page "/login"
+@using TodoApp.Client.Models
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<h1 style="width: 100%; text-align: center; margin-bottom: 32px">Login</h1>
+
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px">
+    <input style="width: 350px" @bind="model.Username" placeholder="Username" />
+    <input style="width: 350px" @bind="model.Password" placeholder="Password" type="password" />
+    <button style="width: 350px" @onclick="HandleLogin">Login</button>
+    
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <p style="color: red; margin-top: 8px">@errorMessage</p>
+    }
+    
+    <p style="margin-top: 8px">You don't have an account? <a href="register" style="margin-top: 16px">Create account</a></p>
+</div>
+
+@code {
+    private LoginDto model = new();
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        if (string.IsNullOrWhiteSpace(model.Username) || string.IsNullOrWhiteSpace(model.Password))
+        {
+            errorMessage = "Username and password are required.";
+            return;
+        }
+        errorMessage = null;
+        
+        var response = await Http.PostAsJsonAsync("api/auth/login", model);
+        if (response.IsSuccessStatusCode)
+        {
+            var tokens = await response.Content.ReadFromJsonAsync<TokenResponseDto>();
+            await JS.InvokeVoidAsync("localStorage.setItem", "accessToken", tokens!.AccessToken);
+            await JS.InvokeVoidAsync("localStorage.setItem", "refreshToken", tokens!.RefreshToken);
+            Nav.NavigateTo("/todos");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Login error. Please enter correct credentials.");
+        }
+    }
+}

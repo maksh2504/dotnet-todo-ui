@@ -1,0 +1,138 @@
+@page "/todos"
+@using TodoApp.Client.Models
+@using TodoApp.Client.Components
+@inject IJSRuntime JS
+@inject IHttpClientFactory ClientFactory
+
+<RedirectToLogin />
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px">
+    <h1>My Tasks</h1>
+    <div style="display: flex; align-items: center; gap: 20px">
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <label>Sort:</label>
+            <select value="@sortOrder" @onchange="SortChanged" style="padding: 9px 12px">
+                <option value="asc">Oldest First</option>
+                <option value="desc">Newest First</option>
+            </select>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <label>Finished:</label>
+            <select value="@finishedOrder" @onchange="FinishedSortChanged" style="padding: 9px 12px">
+                <option value="">All</option>
+                <option value="false">Only Active</option>
+                <option value="true">Only Finished</option>
+            </select>
+        </div>
+    </div>
+    <button @onclick="ToggleAddForm" style="padding: 6px 12px; cursor: pointer">@(showAddForm ? "Cancel" : "Add Task")</button>
+</div>
+
+@if (showAddForm)
+{
+    <div style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; max-width: 300px">
+        <input placeholder="Title" @bind="newTask.Title" />
+        <textarea placeholder="Description" @bind="newTask.Description"></textarea>
+        <div style="display: flex; gap: 8px">
+            <button @onclick="CreateTodo" style="padding: 6px 12px">Save</button>
+            <button @onclick="CancelAdd" style="padding: 6px 12px">Cancel</button>
+        </div>
+    </div>
+}
+
+@if (todos == null)
+{
+    <p>Loading...</p>
+}
+else if (todos.Count == 0)
+{
+    <p>No tasks yet.</p>
+}
+else
+{
+    <ul style="list-style: none; padding-left: 0; display: flex; flex-direction: column; gap: 12px; width: 70%; margin: 0 auto">
+        @foreach (var todo in todos)
+        {
+            <TodoItem Todo="todo" OnDeleted="ReloadTodos" />
+        }
+    </ul>
+}
+
+@code {
+    private List<TodoDto>? todos;
+    private bool showAddForm = false;
+    private CreateTodoDto newTask = new();
+    private string sortOrder = "desc";
+    private string? finishedOrder;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTodos();
+    }
+
+    private async Task LoadTodos()
+    {
+        var finishQuery = string.IsNullOrWhiteSpace(finishedOrder) ? "" : $"&finished={finishedOrder}";
+        var client = ClientFactory.CreateClient("AuthorizedClient");
+        var response = await client.GetAsync($"api/todos?sort={sortOrder}" + finishQuery);
+        if (response.IsSuccessStatusCode)
+        {
+            todos = await response.Content.ReadFromJsonAsync<List<TodoDto>>();
+        }
+    }
+
+    private async Task ReloadTodos()
+    {
+        await LoadTodos();
+        StateHasChanged();
+    }
+    
+    private async Task SortChanged(ChangeEventArgs e)
+    {
+        sortOrder = e.Value?.ToString() ?? "desc";
+        await LoadTodos();
+    }
+    
+    private async Task FinishedSortChanged(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString();
+
+        finishedOrder = string.IsNullOrWhiteSpace(value) ? null : value;
+
+        await LoadTodos();
+    }
+
+    private void ToggleAddForm()
+    {
+        showAddForm = !showAddForm;
+        newTask = new();
+    }
+
+    private void CancelAdd()
+    {
+        showAddForm = false;
+        newTask = new();
+    }
+
+    private async Task CreateTodo()
+    {
+        if (string.IsNullOrWhiteSpace(newTask.Title))
+        {
+            await JS.InvokeVoidAsync("alert", "Title is required.");
+            return;
+        }
+
+        var client = ClientFactory.CreateClient("AuthorizedClient");
+        var response = await client.PostAsJsonAsync("api/todos", newTask);
+        if (response.IsSuccessStatusCode)
+        {
+            showAddForm = false;
+            newTask = new();
+            await ReloadTodos();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Failed to create task.");
+        }
+    }
+}

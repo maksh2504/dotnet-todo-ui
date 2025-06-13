@@ -1,0 +1,108 @@
+@namespace TodoApp.Client.Components
+@using TodoApp.Client.Models
+@inject IHttpClientFactory ClientFactory
+@inject IJSRuntime JS
+
+<div style="display: flex; align-items: start; gap: 8px; padding: 8px 0; border-bottom: 1px solid #ddd">
+    <input type="checkbox" checked="@Todo.Finished" @onchange="ChangeFinished" style="height: 24px" />
+
+    @if (isEditing)
+    {
+        <input @bind="editedTitle" placeholder="Title" style="width: 150px" />
+        <textarea @bind="editedDescription" placeholder="Description" style="width: 100%; height: 30px"></textarea>
+        <button @onclick="SaveEdit" style="padding: 4px 8px; margin-left: auto">Save</button>
+        <button @onclick="CancelEdit" style="padding: 4px 8px">Cancel</button>
+    }
+    else
+    {
+        <div style="width: 150px">@Todo.Title</div>
+        <div style="width: auto; color: #666; word-wrap: break-word; max-width: 400px">@Todo.Description</div>
+        <button @onclick="StartEdit" style="padding: 4px 8px; margin-left: auto">Edit</button>
+        <button @onclick="DeleteTodo" style="padding: 4px 8px; color: red">Delete</button>
+    }
+</div>
+
+@code {
+    [Parameter] public TodoDto Todo { get; set; } = default!;
+    [Parameter] public EventCallback OnDeleted { get; set; }
+
+    private bool isEditing = false;
+    private string editedTitle = "";
+    private string? editedDescription = "";
+
+    private async Task ChangeFinished(ChangeEventArgs e)
+    {
+        bool isChecked = (bool)e.Value!;
+        var body = new { finished = isChecked };
+
+        var client = ClientFactory.CreateClient("AuthorizedClient");
+        var response = await client.PatchAsJsonAsync($"api/todos/{Todo.Id}", body);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var updated = await response.Content.ReadFromJsonAsync<TodoDto>();
+            if (updated is not null)
+            {
+                Todo.Finished = updated.Finished;
+            }
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Change status error.");
+        }
+    }
+
+    private void StartEdit()
+    {
+        isEditing = true;
+        editedTitle = Todo.Title;
+        editedDescription = Todo.Description;
+    }
+
+    private void CancelEdit() => isEditing = false;
+
+    private async Task SaveEdit()
+    {
+        var body = new
+        {
+            title = editedTitle,
+            description = editedDescription
+        };
+
+        var client = ClientFactory.CreateClient("AuthorizedClient");
+        var response = await client.PatchAsJsonAsync($"api/todos/{Todo.Id}", body);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var updated = await response.Content.ReadFromJsonAsync<TodoDto>();
+            if (updated is not null)
+            {
+                Todo.Title = updated.Title;
+                Todo.Description = updated.Description;
+            }
+            isEditing = false;
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Update failed.");
+        }
+    }
+
+    private async Task DeleteTodo()
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Delete this todo?");
+        if (!confirmed) return;
+
+        var client = ClientFactory.CreateClient("AuthorizedClient");
+        var response = await client.DeleteAsync($"api/todos/{Todo.Id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            await OnDeleted.InvokeAsync();
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Delete failed.");
+        }
+    }
+}

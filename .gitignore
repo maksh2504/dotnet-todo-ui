@@ -1,0 +1,59 @@
+# === Common .NET & Blazor ===
+**/bin/
+**/obj/
+**/out/
+**/Generated/
+**/.vs/
+**/.vscode/
+**/.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# === Build and publish outputs ===
+**/publish/
+**/wwwroot/dist/
+**/dist/
+**/build/
+
+# === ASP.NET Secrets and configs ===
+secrets.json
+appsettings.*.json
+!appsettings.Development.json
+
+# === Node/npm artifacts (if any used in Blazor or interop) ===
+node_modules/
+*.log
+
+# === Blazor-specific ===
+**/wwwroot/js/AuthService.js.map
+**/wwwroot/js/*.bundle.js
+
+# === System files ===
+.DS_Store
+Thumbs.db
+
+# === IDE test results ===
+TestResults/
+*.VisualState.xml
+*.cache
+*.dbmdl
+*.jfm
+
+# === Rider/JetBrains ===
+.idea/
+*.sln.iml
+
+# === Frontend-only (if used) ===
+**/package-lock.json
+**/yarn.lock
+**/.eslintcache
+
+# === WebAssembly AOT artifacts ===
+**/obj/Release/net*/wasm/
+
+# === Temporary files ===
+*.tmp
+*.bak
+*.orig
