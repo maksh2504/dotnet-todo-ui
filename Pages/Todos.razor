@@ -1,8 +1,9 @@
 @page "/todos"
 @using TodoApp.Client.Models
 @using TodoApp.Client.Components
+@using TodoApp.Client.Services
 @inject IJSRuntime JS
-@inject IHttpClientFactory ClientFactory
+@inject ITodoService TodoService
 
 <RedirectToLogin />
 
@@ -72,13 +73,7 @@ else
 
     private async Task LoadTodos()
     {
-        var finishQuery = string.IsNullOrWhiteSpace(finishedOrder) ? "" : $"&finished={finishedOrder}";
-        var client = ClientFactory.CreateClient("AuthorizedClient");
-        var response = await client.GetAsync($"api/todos?sort={sortOrder}" + finishQuery);
-        if (response.IsSuccessStatusCode)
-        {
-            todos = await response.Content.ReadFromJsonAsync<List<TodoDto>>();
-        }
+        todos = await TodoService.GetTodosAsync(sortOrder, finishedOrder);
     }
 
     private async Task ReloadTodos()
@@ -86,19 +81,17 @@ else
         await LoadTodos();
         StateHasChanged();
     }
-    
+
     private async Task SortChanged(ChangeEventArgs e)
     {
         sortOrder = e.Value?.ToString() ?? "desc";
         await LoadTodos();
     }
-    
+
     private async Task FinishedSortChanged(ChangeEventArgs e)
     {
         var value = e.Value?.ToString();
-
-        finishedOrder = string.IsNullOrWhiteSpace(value) ? null : value;
-
+        finishedOrder = value;
         await LoadTodos();
     }
 
@@ -122,9 +115,8 @@ else
             return;
         }
 
-        var client = ClientFactory.CreateClient("AuthorizedClient");
-        var response = await client.PostAsJsonAsync("api/todos", newTask);
-        if (response.IsSuccessStatusCode)
+        var result = await TodoService.CreateTodoAsync(newTask);
+        if (result is not null)
         {
             showAddForm = false;
             newTask = new();

@@ -1,34 +1,5 @@
-﻿@inject IJSRuntime JS
-@inject NavigationManager Nav
-
-@* <div class="top-row ps-3 navbar navbar-dark"> *@
-@*     <div class="container-fluid"> *@
-@*         <a class="navbar-brand" href="">TodoApp.Client</a> *@
-@*         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu"> *@
-@*             <span class="navbar-toggler-icon"></span> *@
-@*         </button> *@
-@*     </div> *@
-@* </div> *@
-@* *@
-@* <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu"> *@
-@*     <nav class="nav flex-column"> *@
-@*         <div class="nav-item px-3"> *@
-@*             <NavLink class="nav-link" href="" Match="NavLinkMatch.All"> *@
-@*                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home *@
-@*             </NavLink> *@
-@*         </div> *@
-@*         <div class="nav-item px-3"> *@
-@*             <NavLink class="nav-link" href="todos"> *@
-@*                 <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Todos *@
-@*             </NavLink> *@
-@*         </div> *@
-@*         <div class="nav-item px-3"> *@
-@*             <button class="navbar-toggler" @onclick="Logout"> *@
-@*                 Logout *@
-@*             </button> *@
-@*         </div> *@
-@*     </nav> *@
-@* </div> *@
+﻿@using TodoApp.Client.Services
+@inject IAuthService AuthService
 
 <header style="width: 100%; background-color: #f8f9fa; padding: 10px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
     <nav style="display: flex; align-items: center; gap: 20px;">
@@ -46,18 +17,8 @@
 
 
 @code {
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
-    
     private async Task Logout()
     {
-        await JS.InvokeVoidAsync("localStorage.clear");
-        Nav.NavigateTo("/login");
+        await AuthService.LogoutAsync();
     }
 }

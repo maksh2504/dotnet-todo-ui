@@ -1,8 +1,11 @@
 @page "/register"
+@using TodoApp.Client.Components
 @using TodoApp.Client.Models
-@inject HttpClient Http
-@inject NavigationManager Nav
+@using TodoApp.Client.Services
 @inject IJSRuntime JS
+@inject IAuthService AuthService
+
+<RedirectToHome />
 
 <h1 style="width: 100%; text-align: center; margin-bottom: 32px">Create account</h1>
 
@@ -19,12 +22,8 @@
 
     private async Task HandleRegister()
     {
-        var response = await Http.PostAsJsonAsync("api/auth/register", model);
-        if (response.IsSuccessStatusCode)
-        {
-            Nav.NavigateTo("/login");
-        }
-        else
+        var success = await AuthService.RegisterAsync(model);
+        if (!success)
         {
             await JS.InvokeVoidAsync("alert", "Registration error. Please enter correct credentials.");
         }

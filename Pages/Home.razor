@@ -1,8 +1,8 @@
 ﻿@page "/"
 @using TodoApp.Client.Components
 @using TodoApp.Client.Models
-@inject IJSRuntime JS
-@inject IHttpClientFactory ClientFactory
+@using TodoApp.Client.Services
+@inject IUserService UserService
 
 <RedirectToLogin />
 
@@ -19,10 +19,6 @@ Welcome to ToDo app.
 
     protected override async Task OnInitializedAsync()
     {
-        var client = ClientFactory.CreateClient("AuthorizedClient");
-        var response = await client.GetAsync("api/users/current");
-        if (!response.IsSuccessStatusCode)
-            return;
-        User = await response.Content.ReadFromJsonAsync<UserDto>();
+        User = await UserService.GetCurrentUserAsync();
     }
 }

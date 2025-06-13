@@ -1,6 +1,5 @@
 @inject IJSRuntime JS
-@using TodoApp.Client.Services
-@inject IAuthService AuthService
+@inject NavigationManager Nav
 
 @namespace TodoApp.Client.Components
 
@@ -8,10 +7,9 @@
     protected override async Task OnInitializedAsync()
     {
         var token = await JS.InvokeAsync<string>("localStorage.getItem", "accessToken");
-        if (string.IsNullOrEmpty(token))
+        if (!string.IsNullOrEmpty(token))
         {
-            await JS.InvokeVoidAsync("alert", "Private page. Login to visit this page.");
-            await AuthService.LogoutAsync();
+            Nav.NavigateTo("/");
         }
     }
 }

@@ -1,7 +1,8 @@
 @namespace TodoApp.Client.Components
 @using TodoApp.Client.Models
-@inject IHttpClientFactory ClientFactory
+@using TodoApp.Client.Services
 @inject IJSRuntime JS
+@inject ITodoService TodoService
 
 <div style="display: flex; align-items: start; gap: 8px; padding: 8px 0; border-bottom: 1px solid #ddd">
     <input type="checkbox" checked="@Todo.Finished" @onchange="ChangeFinished" style="height: 24px" />
@@ -35,16 +36,11 @@
         bool isChecked = (bool)e.Value!;
         var body = new { finished = isChecked };
 
-        var client = ClientFactory.CreateClient("AuthorizedClient");
-        var response = await client.PatchAsJsonAsync($"api/todos/{Todo.Id}", body);
+        var response = await TodoService.UpdateTodoAsync(Todo.Id, body);
 
-        if (response.IsSuccessStatusCode)
+        if (response is not null)
         {
-            var updated = await response.Content.ReadFromJsonAsync<TodoDto>();
-            if (updated is not null)
-            {
-                Todo.Finished = updated.Finished;
-            }
+            Todo.Finished = response.Finished;
         }
         else
         {
@@ -69,17 +65,13 @@
             description = editedDescription
         };
 
-        var client = ClientFactory.CreateClient("AuthorizedClient");
-        var response = await client.PatchAsJsonAsync($"api/todos/{Todo.Id}", body);
+        var response = await TodoService.UpdateTodoAsync(Todo.Id, body);
 
-        if (response.IsSuccessStatusCode)
+        if (response is not null)
         {
-            var updated = await response.Content.ReadFromJsonAsync<TodoDto>();
-            if (updated is not null)
-            {
-                Todo.Title = updated.Title;
-                Todo.Description = updated.Description;
-            }
+            Todo.Title = response.Title;
+            Todo.Description = response.Description;
+            
             isEditing = false;
         }
         else
@@ -93,10 +85,9 @@
         var confirmed = await JS.InvokeAsync<bool>("confirm", "Delete this todo?");
         if (!confirmed) return;
 
-        var client = ClientFactory.CreateClient("AuthorizedClient");
-        var response = await client.DeleteAsync($"api/todos/{Todo.Id}");
+        var response = await TodoService.DeleteTodoAsync(Todo.Id);
 
-        if (response.IsSuccessStatusCode)
+        if (response)
         {
             await OnDeleted.InvokeAsync();
         }

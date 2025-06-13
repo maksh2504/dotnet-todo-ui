@@ -16,6 +16,10 @@
             client.BaseAddress = new Uri("https://localhost:7175/");
         })
         .AddHttpMessageHandler<AuthHttpHandler>();
+    
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<ITodoService, TodoService>();
 
     await builder.Build().RunAsync();
 
